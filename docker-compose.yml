@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: ./db/Dockerfile
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: kabu_db
+      MYSQL_USER: kabu
+      MYSQL_PASSWORD: kabu
+      TZ: "Asia/Tokyo"
+    volumes:
+      - ./db/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./db/data:/var/lib/mysql
+      - ./db/scripts:/docker-entrypoint-initdb.d
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: mysql://kabu:kabupassword@db:3306/kabu_db
+    depends_on:
+      - db
+    tty: true
+  
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    command: sh -c "cd react-app && npm start"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/frontend
+      - front_node_modules:/workspace/node_modules
+
+volumes:
+  front_node_modules:
