@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const PlantDetails = ({ plant, isOpen, onClose }) => {
   if (!isOpen || !plant) return null;
@@ -21,7 +21,6 @@ const PlantDetails = ({ plant, isOpen, onClose }) => {
       <p><strong>場所:</strong> {plant.shelf} - {plant.position}</p>
       <p><strong>登録日:</strong> {new Date(plant.entry_date).toLocaleDateString()}</p>
       <p><strong>状態:</strong> {plant.state_type || '未設定'}</p>
-      {/* ここに追加の詳細情報を表示 */}
       <p><strong>給水履歴:</strong></p>
     </div>
   );
