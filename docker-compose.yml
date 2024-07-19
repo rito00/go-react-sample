@@ -22,7 +22,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: "sh -c 'sleep 10 && node server.js'"
+    # command: "sh -c 'sleep 10 && node server.js'"
     ports:
       - "8080:8080"
     environment:
