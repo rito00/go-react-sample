@@ -3,8 +3,8 @@ version: "3.9"
 services:
   db:
     build:
-      context: .
-      dockerfile: ./db/Dockerfile
+      context: ./db
+      dockerfile: Dockerfile
     ports:
       - "3306:3306"
     environment:
@@ -20,28 +20,30 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: ./backend/Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     environment:
       DATABASE_URL: mysql://kabu:kabupassword@db:3306/kabu_db
     depends_on:
       - db
+    volumes:
+      - ./backend:/app
     tty: true
   
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    command: sh -c "cd react-app && npm install && npm start"
     ports:
       - "3000:3000"
     depends_on:
       - backend
     volumes:
-      - ./frontend:/frontend
+      - ./frontend/app:/app # frontend/appディレクトリをコンテナの/appにマウント
       - front_node_modules:/workspace/node_modules
+    tty: true
 
 volumes:
   front_node_modules:
