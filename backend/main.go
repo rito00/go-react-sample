@@ -22,11 +22,10 @@ type Plant struct {
 }
 
 type WateringHistory struct {
-	PlantID            int       `json:"plant_id"`
-	WateringDate       time.Time `json:"watering_date"`
-	FertilizerRecipeID int       `json:"fertilizer_recipe_id"`
-	Amount             float64   `json:"amount"`
-	AdditionalInfo     string    `json:"additional_info"`
+	WateringDate         time.Time `json:"watering_date"`
+	FertilizerRecipeName string    `json:"fertilizer_recipe_name"`
+	Amount               float64   `json:"amount"`
+	Description          string    `json:"description"`
 }
 
 func main() {
@@ -111,7 +110,7 @@ func getWateringHistory(db *sql.DB) http.HandlerFunc {
 
 		if plantID != "" {
 				query = `
-						SELECT p.plant_id, p.location_id, w.watering_date, w.amount, f.recipe_name
+						SELECT w.watering_date, w.amount, f.recipe_name, f.description
 						FROM plants p
 						JOIN watering_history w ON p.plant_id = w.plant_id
 						LEFT JOIN fertilizer_recipes f ON w.fertilizer_recipe_id = f.recipe_id
@@ -121,7 +120,7 @@ func getWateringHistory(db *sql.DB) http.HandlerFunc {
 				args = append(args, plantID)
 		} else {
 				query = `
-						SELECT p.plant_id, p.location_id, w.watering_date, w.amount, f.recipe_name
+						SELECT w.watering_date, w.amount, f.recipe_name, f.description
 						FROM plants p
 						JOIN watering_history w ON p.plant_id = w.plant_id
 						LEFT JOIN fertilizer_recipes f ON w.fertilizer_recipe_id = f.recipe_id
@@ -139,7 +138,7 @@ func getWateringHistory(db *sql.DB) http.HandlerFunc {
 		
 		for rows.Next() {
 			var wh WateringHistory
-			if err := rows.Scan(&wh.PlantID, &wh.FertilizerRecipeID, &wh.WateringDate, &wh.Amount, &wh.AdditionalInfo); err != nil {
+			if err := rows.Scan(&wh.WateringDate, &wh.Amount, &wh.FertilizerRecipeName, &wh.Description); err != nil {
 				log.Printf("Row scan error: %v", err)
 				http.Error(w, "Internal server error2", http.StatusInternalServerError)
 				return

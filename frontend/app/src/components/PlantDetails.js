@@ -48,9 +48,9 @@ const PlantDetails = ({ plant, isOpen, onClose }) => {
       <p><strong>場所:</strong> {plant.shelf} - {plant.position}</p>
       <p><strong>登録日:</strong> {new Date(plant.entry_date).toLocaleDateString()}</p>
       <p><strong>状態:</strong> {plant.state_type || '未設定'}</p>
-      <p><strong>給水履歴:</strong> {waterings && waterings.length || 0}回</p>
+      <p><strong>給水履歴:</strong> {waterings?.length || 0}回</p>
       
-      {waterings && waterings.length > 0 &&
+      {waterings?.length > 0 &&
         <table>
         <thead>
           <tr>
@@ -64,9 +64,9 @@ const PlantDetails = ({ plant, isOpen, onClose }) => {
           {waterings.map((watering, index) => (
             <tr key={index}>
               <td>{new Date(watering.watering_date).toLocaleString()}</td>
-              <td>{watering.fertilizer_recipe_id}</td>
+              <td>{watering.fertilizer_recipe_name}</td>
               <td>{watering.amount}</td>
-              <td>{watering.additional_info}</td>
+              <td>{watering.description}</td>
             </tr>
           ))}
         </tbody>
