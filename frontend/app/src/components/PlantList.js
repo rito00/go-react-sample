@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import PlantDetails from './PlantDetails';
@@ -13,7 +13,10 @@ import {
   TableRow, 
   Paper, 
   Typography,
-  Button 
+  Button,
+  MenuItem,
+  Select,
+  
 } from '@mui/material';
 
 const PlantMain = () => {
@@ -77,6 +80,39 @@ const PlantMain = () => {
     // 必要に応じて植物リストを更新
   };
   
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedPlants = useMemo(() => {
+    let sortablePlants = [...plants];
+    if (sortConfig.key !== null) {
+      sortablePlants.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortablePlants;
+  }, [plants, sortConfig]);
+
+  const columns = [
+    { id: 'plant_id', label: 'ID' },
+    { id: 'location', label: '場所' },
+    { id: 'entry_date', label: '登録日' },
+    { id: 'state_type', label: '状態' },
+  ];
+  
   if (loading) return <div>読み込み中...</div>;
   if (error) return <div>{error}</div>;
   
@@ -112,20 +148,26 @@ const PlantMain = () => {
           <Table aria-label="いちごの株一覧">
             <TableHead>
               <TableRow>
-                <TableCell>ID</TableCell>
-                <TableCell>場所</TableCell>
-                <TableCell>登録日</TableCell>
-                <TableCell>状態</TableCell>
+                {columns.map((column) => (
+                  <TableCell key={column.id}>
+                    {column.label}
+                    <Select
+                      value={sortConfig.key === column.id ? sortConfig.direction : ''}
+                      onChange={(e) => handleSort(column.id)}
+                      displayEmpty
+                      size="small"
+                    >
+                      <MenuItem value="">ソートなし</MenuItem>
+                      <MenuItem value="asc">昇順</MenuItem>
+                      <MenuItem value="desc">降順</MenuItem>
+                    </Select>
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>
-              {plants.map((plant) => (
-                <TableRow
-                  key={plant.plant_id}
-                  onClick={() => handlePlantClick(plant)}
-                  hover
-                  style={{ cursor: 'pointer' }}
-                >
+              {sortedPlants.map((plant) => (
+                <TableRow key={plant.plant_id} hover onClick={() => {handlePlantClick(plant)}} style={{ cursor: 'pointer' }}>
                   <TableCell>{plant.plant_id}</TableCell>
                   <TableCell>{`${plant.shelf} - ${plant.position}`}</TableCell>
                   <TableCell>{new Date(plant.entry_date).toLocaleDateString()}</TableCell>
@@ -173,5 +215,6 @@ const PlantMain = () => {
     </div>
   );
 };
+
 
 export default PlantMain;
