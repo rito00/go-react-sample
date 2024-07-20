@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import PlantDetails from './PlantDetails';
 import PlantRegistrationDialog from './PlantRegistrationDialog';
@@ -16,7 +16,6 @@ import {
   Button,
   MenuItem,
   Select,
-  
 } from '@mui/material';
 
 const PlantMain = () => {
@@ -45,7 +44,6 @@ const PlantMain = () => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      console.log("clicked!")
       if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
         const clickedElement = event.target.closest('tr');
         if (!clickedElement || !clickedElement.classList.contains('plant-row')) {
@@ -74,10 +72,8 @@ const PlantMain = () => {
   };
 
   const handleRegisterPlant = (newPlant) => {
-    // ここで新しい植物を登録するロジックを実装
     console.log('新しい植物を登録:', newPlant);
     setIsDialogOpen(false);
-    // 必要に応じて植物リストを更新
   };
   
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
@@ -137,7 +133,6 @@ const PlantMain = () => {
     },
   };
 
-  
   return (
     <div style={{ display: 'flex' }}>
       <div style={{ flex: 1 }}>
@@ -167,7 +162,13 @@ const PlantMain = () => {
             </TableHead>
             <TableBody>
               {sortedPlants.map((plant) => (
-                <TableRow key={plant.plant_id} hover onClick={() => {handlePlantClick(plant)}} style={{ cursor: 'pointer' }}>
+                <TableRow 
+                  key={plant.plant_id} 
+                  hover 
+                  onClick={() => handlePlantClick(plant)} 
+                  style={{ cursor: 'pointer' }}
+                  className="plant-row"
+                >
                   <TableCell>{plant.plant_id}</TableCell>
                   <TableCell>{`${plant.shelf} - ${plant.position}`}</TableCell>
                   <TableCell>{new Date(plant.entry_date).toLocaleDateString()}</TableCell>
@@ -178,9 +179,9 @@ const PlantMain = () => {
           </Table>
         </TableContainer>
         
-        <div >
+        <div>
           <Button onClick={handleOpenDialog} style={{flex:0.1}}>株の新規登録</Button>
-          <Button style={{flex:1}} >その他の情報</Button>
+          <Button style={{flex:1}}>その他の情報</Button>
         </div>
         <PlantRegistrationDialog
           isOpen={isDialogOpen}
@@ -189,32 +190,35 @@ const PlantMain = () => {
         />
       </div>
       
-      <motion.div 
-        initial="closed"
-        animate={sidebarOpen ? 'open' : 'closed'} 
-        variants={variants}
-        style={{
-          position: 'fixed',
-          top: 0,
-          right: 0,
-          bottom: 0,
-          width: '450px',
-          background: '#f0f0f0',
-          boxShadow: '-2px 0 5px rgba(0,0,0,0.1)'
-        }}
-      >
-        <div ref={sidebarRef}>
-          <PlantDetails 
-            plant={selectedPlant} 
-            isOpen={sidebarOpen} 
-            onClose={() => setSidebarOpen(false)} 
-          />
-        </div>  
-      </motion.div>
-      
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div 
+            initial="closed"
+            animate="open"
+            exit="closed"
+            variants={variants}
+            style={{
+              position: 'fixed',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: '450px',
+              background: '#f0f0f0',
+              boxShadow: '-2px 0 5px rgba(0,0,0,0.1)'
+            }}
+          >
+            <div ref={sidebarRef}>
+              <PlantDetails 
+                plant={selectedPlant} 
+                isOpen={sidebarOpen} 
+                onClose={() => setSidebarOpen(false)} 
+              />
+            </div>  
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
-
 
 export default PlantMain;
