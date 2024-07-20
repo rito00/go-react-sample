@@ -31,6 +31,7 @@ const PlantDetails = ({ plant, isOpen, onClose }) => {
   if (loading) return <div>読み込み中...</div>;
   if (error) return <div>{error}</div>;
 
+
   return (
     <div className="plant-details">
       <button onClick={onClose} className="close-button">閉じる</button>

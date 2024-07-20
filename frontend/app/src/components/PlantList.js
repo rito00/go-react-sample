@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import PlantDetails from './PlantDetails';
+import { motion } from 'framer-motion';
 
 const PlantList = () => {
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const [selectedPlant, setSelectedPlant] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const sidebarRef = useRef(null);
 
   useEffect(() => {
     const fetchPlants = async () => {
@@ -25,6 +26,23 @@ const PlantList = () => {
     fetchPlants();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      console.log("clicked!")
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        const clickedElement = event.target.closest('tr');
+        if (!clickedElement || !clickedElement.classList.contains('plant-row')) {
+          setSidebarOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const handlePlantClick = (plant) => {
     setSelectedPlant(plant);
     setSidebarOpen(true);
@@ -32,7 +50,12 @@ const PlantList = () => {
 
   if (loading) return <div>読み込み中...</div>;
   if (error) return <div>{error}</div>;
-
+  
+  const variants = {
+    open: { opacity: 1, x: 0 },
+    closed: { opacity: 0, x: '-100%' },
+  };
+  
   return (
     <div style={{ display: 'flex' }}>
       <div style={{ flex: 1 }}>
@@ -48,7 +71,12 @@ const PlantList = () => {
           </thead>
           <tbody>
             {plants.map((plant) => (
-              <tr key={plant.plant_id} onClick={() => handlePlantClick(plant)} style={{ cursor: 'pointer' }}>
+              <tr 
+                key={plant.plant_id} 
+                onClick={() => handlePlantClick(plant)} 
+                style={{ cursor: 'pointer' }}
+                className="plant-row"
+              >
                 <td>{plant.plant_id}</td>
                 <td>{`${plant.shelf} - ${plant.position}`}</td>
                 <td>{new Date(plant.entry_date).toLocaleDateString()}</td>
@@ -58,11 +86,15 @@ const PlantList = () => {
           </tbody>
         </table>
       </div>
-      <PlantDetails 
-        plant={selectedPlant} 
-        isOpen={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
-      />
+      <motion.div animate={sidebarOpen ? 'open' : 'closed'} variants={variants}>
+        <div ref={sidebarRef}>
+          <PlantDetails 
+            plant={selectedPlant} 
+            isOpen={sidebarOpen} 
+            onClose={() => setSidebarOpen(false)} 
+          />
+        </div>  
+      </motion.div>
     </div>
   );
 };
