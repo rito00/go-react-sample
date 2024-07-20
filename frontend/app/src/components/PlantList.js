@@ -11,6 +11,7 @@ import {
   TableContainer, 
   TableHead, 
   TableRow, 
+  TableSortLabel,
   Paper, 
   Typography,
   Button,
@@ -83,6 +84,10 @@ const PlantMain = () => {
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
     }
+    else if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      setSortConfig({ key:null, direction });
+      return
+    }
     setSortConfig({ key, direction });
   };
 
@@ -103,10 +108,10 @@ const PlantMain = () => {
   }, [plants, sortConfig]);
 
   const columns = [
-    { id: 'plant_id', label: 'ID' },
-    { id: 'location', label: '場所' },
-    { id: 'entry_date', label: '登録日' },
-    { id: 'state_type', label: '状態' },
+    { id: 'plant_id', label: 'ID', sortable: true },
+    { id: 'location', label: '場所', sortable: true },
+    { id: 'entry_date', label: '登録日', sortable: true },
+    { id: 'state_type', label: '状態', sortable: false },
   ];
   
   if (loading) return <div>読み込み中...</div>;
@@ -145,17 +150,29 @@ const PlantMain = () => {
               <TableRow>
                 {columns.map((column) => (
                   <TableCell key={column.id}>
-                    {column.label}
-                    <Select
-                      value={sortConfig.key === column.id ? sortConfig.direction : ''}
-                      onChange={(e) => handleSort(column.id)}
-                      displayEmpty
-                      size="small"
-                    >
-                      <MenuItem value="">ソートなし</MenuItem>
-                      <MenuItem value="asc">昇順</MenuItem>
-                      <MenuItem value="desc">降順</MenuItem>
-                    </Select>
+                    {column.sortable ? (
+                      <TableSortLabel
+                        active={sortConfig.key === column.id}
+                        direction={sortConfig.key === column.id ? sortConfig.direction : 'asc'}
+                        onClick={() => handleSort(column.id)}
+                      >
+                        {column.label}
+                      </TableSortLabel>
+                    ) : (
+                      column.label
+                    )}
+                    {column.id === 'state_type' && (
+                      <Select
+                        value={sortConfig.key === column.id ? sortConfig.direction : ''}
+                        onChange={(e) => handleSort(column.id)}
+                        displayEmpty
+                        size="small"
+                      >
+                        <MenuItem value="">ソートなし</MenuItem>
+                        <MenuItem value="asc">昇順</MenuItem>
+                        <MenuItem value="desc">降順</MenuItem>
+                      </Select>
+                    )}
                   </TableCell>
                 ))}
               </TableRow>
