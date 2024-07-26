@@ -1,7 +1,6 @@
 package main
 
 import (
-  "database/sql"
   "encoding/json"
   "fmt"
   "log"
@@ -41,7 +40,7 @@ func main() {
 
   router := mux.NewRouter()
   router.HandleFunc("/api/plants", getPlants(db)).Methods("GET")
-	router.HandleFunc("/api/watering-history", getWateringHistory(db)).Methods("GET")
+  router.HandleFunc("/api/watering-history", getWateringHistory(db)).Methods("GET")
 
   // CORS の設定
   c := cors.New(cors.Options{
@@ -57,104 +56,48 @@ func main() {
   log.Fatal(http.ListenAndServe(":8080", handler))
 }
 
-func getPlants(db *sql.DB) http.HandlerFunc {
-  return func(w http.ResponseWriter, r *http.Request) {
-    var plants []Plant
-    query := `
-            SELECT p.plant_id, l.shelf, l.position, p.entry_date, COALESCE(ps.state_type, '未設定') as state_type
-            FROM plants p
-            JOIN locations l ON p.location_id = l.location_id
-            LEFT JOIN plant_states ps ON p.plant_id = ps.plant_id
-        `
-    rows, err := db.Query(query)
-    if err != nil {
+// executeQueryAndRespond は、クエリを実行し、結果をJSONとして返す
+func executeQueryAndRespond(w http.ResponseWriter, db *gorm.DB, query *gorm.DB, result interface{}) {
+  if err := query.Scan(result).Error; err != nil {
       log.Printf("Database query error: %v", err)
       http.Error(w, "Internal server error", http.StatusInternalServerError)
       return
-    }
-    defer rows.Close()
+  }
 
-    for rows.Next() {
-      var p Plant
-      if err := rows.Scan(&p.PlantID, &p.Shelf, &p.Position, &p.EntryDate, &p.StateType); err != nil {
-        log.Printf("Row scan error: %v", err)
-        http.Error(w, "Internal server error", http.StatusInternalServerError)
-        return
-      }
-      plants = append(plants, p)
-    }
-
-    if err := rows.Err(); err != nil {
-      log.Printf("Row iteration error: %v", err)
-      http.Error(w, "Internal server error", http.StatusInternalServerError)
-      return
-    }
-
-    w.Header().Set("Content-Type", "application/json")
-    if err := json.NewEncoder(w).Encode(plants); err != nil {
+  w.Header().Set("Content-Type", "application/json")
+  if err := json.NewEncoder(w).Encode(result); err != nil {
       log.Printf("JSON encoding error: %v", err)
       http.Error(w, "Internal server error", http.StatusInternalServerError)
       return
-    }
   }
 }
 
-func getWateringHistory(db *sql.DB) http.HandlerFunc {
+
+func getPlants(db *gorm.DB) http.HandlerFunc {
+  return func(w http.ResponseWriter, r *http.Request) {
+    var plants []Plant
+    query := db.Table("plants").
+      Select("plants.plant_id, locations.shelf, locations.position, plants.entry_date, COALESCE(plant_states.state_type, '未設定') as state_type").
+      Joins("JOIN locations ON plants.location_id = locations.location_id").
+      Joins("LEFT JOIN plant_states ON plants.plant_id = plant_states.plant_id")
+
+    executeQueryAndRespond(w, db, query, &plants)
+  }
+}
+
+func getWateringHistory(db *gorm.DB) http.HandlerFunc {
   return func(w http.ResponseWriter, r *http.Request) {
     var wateringHistory []WateringHistory
-    var query string
-    var args []interface{}
-    plantID := r.URL.Query().Get("plant_id")
+    query := db.Table("watering_history").
+      Select("watering_history.watering_date, watering_history.amount, fertilizer_recipes.recipe_name, fertilizer_recipes.description").
+      Joins("JOIN plants ON plants.plant_id = watering_history.plant_id").
+      Joins("LEFT JOIN fertilizer_recipes ON watering_history.fertilizer_recipe_id = fertilizer_recipes.recipe_id").
+      Order("watering_history.watering_date DESC")
 
-    if plantID != "" {
-        query = `
-            SELECT w.watering_date, w.amount, f.recipe_name, f.description
-            FROM plants p
-            JOIN watering_history w ON p.plant_id = w.plant_id
-            LEFT JOIN fertilizer_recipes f ON w.fertilizer_recipe_id = f.recipe_id
-            WHERE p.plant_id = ? 
-            ORDER BY w.watering_date DESC;
-        `
-        args = append(args, plantID)
-    } else {
-        query = `
-            SELECT w.watering_date, w.amount, f.recipe_name, f.description
-            FROM plants p
-            JOIN watering_history w ON p.plant_id = w.plant_id
-            LEFT JOIN fertilizer_recipes f ON w.fertilizer_recipe_id = f.recipe_id
-            ORDER BY w.watering_date DESC;
-        `
+    if plantID := r.URL.Query().Get("plant_id"); plantID != "" {
+      query = query.Where("plants.plant_id = ?", plantID)
     }
 
-    rows, err := db.Query(query, args...)
-    if err != nil {
-      log.Printf("Database query error: %v", err)
-      http.Error(w, "Internal server error1", http.StatusInternalServerError)
-      return
-    }
-    defer rows.Close()
-    
-    for rows.Next() {
-      var wh WateringHistory
-      if err := rows.Scan(&wh.WateringDate, &wh.Amount, &wh.FertilizerRecipeName, &wh.Description); err != nil {
-        log.Printf("Row scan error: %v", err)
-        http.Error(w, "Internal server error2", http.StatusInternalServerError)
-        return
-      }
-      wateringHistory = append(wateringHistory, wh)
-    }
-    
-    if err := rows.Err(); err != nil {
-      log.Printf("Row iteration error: %v", err)
-      http.Error(w, "Internal server error", http.StatusInternalServerError)
-      return
-    }
-    
-    w.Header().Set("Content-Type", "application/json")
-    if err := json.NewEncoder(w).Encode(wateringHistory); err != nil {
-      log.Printf("JSON encoding error: %v", err)
-      http.Error(w, "Internal server error", http.StatusInternalServerError)
-      return
-    }
+    executeQueryAndRespond(w, db, query, &wateringHistory)
   }
 }
