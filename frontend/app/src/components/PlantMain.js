@@ -91,8 +91,18 @@ const PlantMain = () => {
     setSortConfig({ key, direction });
   };
 
+  const latestPlants = useMemo(() => {
+    const plantMap = new Map();
+    plants.forEach(plant => {
+      if (!plantMap.has(plant.plant_id) || new Date(plant.state_date) > new Date(plantMap.get(plant.plant_id).state_date)) {
+        plantMap.set(plant.plant_id, plant);
+      }
+    });
+    return Array.from(plantMap.values());
+  }, [plants]);
+
   const sortedPlants = useMemo(() => {
-    let sortablePlants = [...plants];
+    let sortablePlants = [...latestPlants];
     if (sortConfig.key !== null) {
       sortablePlants.sort((a, b) => {
         if (a[sortConfig.key] < b[sortConfig.key]) {
@@ -105,7 +115,7 @@ const PlantMain = () => {
       });
     }
     return sortablePlants;
-  }, [plants, sortConfig]);
+  }, [latestPlants, sortConfig]);
 
   const columns = [
     { id: 'plant_id', label: 'ID', sortable: true },

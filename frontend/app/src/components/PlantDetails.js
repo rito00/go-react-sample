@@ -31,7 +31,8 @@ const PlantDetails = ({ plant, isOpen, onClose }) => {
         const response = await apiAxios.get((ENDPOINTS.STATE_HISTORY), {
           params: { plant_id: plant.plant_id }
         });
-        setStateHistory(response.data);
+        const sortedHistory = response.data.sort((a, b) => new Date(a.state_date) - new Date(b.state_date));
+        setStateHistory(sortedHistory);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -84,7 +85,7 @@ const PlantDetails = ({ plant, isOpen, onClose }) => {
             </table>
           </div>
         )}
-        <p><strong>状態履歴</strong></p>
+        <p><strong>状態履歴(レコード重複ゆるしてます)</strong></p>
         {stateHistory?.length > 0 && 
           <div className="table-container">
             <table className="watering-table">

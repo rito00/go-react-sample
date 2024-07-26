@@ -83,6 +83,10 @@ INSERT INTO plants (location_id, entry_date) VALUES
 -- plant_statesにサンプルデータを挿入
 INSERT INTO plant_states (plant_id, state_date, state_type, harvest_weight, description) VALUES
 (1, '2024-07-01 10:00:00', 'seed', NULL, 'test1'),
+(1, '2024-07-01 11:00:00', 'seedlings', NULL, 'test2'),
+(1, '2024-07-01 12:00:00', 'flowering', NULL, 'test3'),
+(1, '2024-07-02 14:00:00', 'fruiting', NULL, 'test4'),
+(1, '2024-07-02 14:00:00', 'harvested', 3.141592, 'test5'),
 (2, '2024-07-10 11:00:00', 'seedlings', NULL, 'test2'),
 (3, '2024-07-20 09:00:00', 'flowering', NULL, '花が咲いているなう'),
 (4, '2024-07-30 14:00:00', 'fruiting', NULL, '実がなり始めた'),
