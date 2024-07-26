@@ -9,16 +9,14 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
-
+import apiAxios from '../api/axios';
+import { ENDPOINTS } from '../api/endpoints';
 
 const PlantRegistrationDialog = ({ isOpen, onClose, onRegister }) => {
   const [shelf, setShelf] = useState('');
   const [position, setPosition] = useState('');
   const [status, setStatus] = useState('');
-
-  // 仮のデータ（後でバックエンドから取得するようにします）
-  const shelves = ['棚A', '棚B', '棚C'];
-  const positions = ['左', '中央', '右'];
+  const [locations, setLocations] = useState([]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -27,6 +25,26 @@ const PlantRegistrationDialog = ({ isOpen, onClose, onRegister }) => {
     setPosition('');
     setStatus('');
   };
+  
+  useEffect(() => {
+    fetchLocations();
+  }, []);
+  
+  const fetchLocations = async () => {
+    try {
+      const response = await apiAxios.get(ENDPOINTS.LOCATIONS);
+      setLocations(response.data);
+    } catch (err){
+      console.error('Failed to fetch locations');
+    }
+  }
+  
+  const shelves = [...new Set(locations.map(loc => loc.shelf))];
+
+  // 選択された棚に基づいて利用可能な位置のリストを作成
+  const positions = locations
+    .filter(loc => loc.shelf === shelf)
+    .map(loc => loc.position);
 
   return (
     <Dialog open={isOpen} onClose={onClose}>

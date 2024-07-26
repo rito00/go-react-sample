@@ -23,12 +23,18 @@ type Plant struct {
 }
 
 type WateringHistory struct {
-  ID                   uint      `gorm:"primaryKey"`
-  PlantID              uint      `json:"plant_id"`
-  WateringDate         time.Time `json:"watering_date"`
-  FertilizerRecipeName string    `json:"fertilizer_recipe_name"`
-  Amount               float64   `json:"amount"`
-  Description          string    `json:"description"`
+	ID                   uint      `gorm:"column:id" json:"-"`
+	PlantID              uint      `gorm:"column:plant_id" json:"plant_id"`
+	WateringDate         time.Time `gorm:"column:watering_date" json:"watering_date"`
+	Amount               float64   `gorm:"column:amount" json:"amount"`
+	FertilizerRecipeName string    `gorm:"column:recipe_name" json:"fertilizer_recipe_name"`
+	Description          string    `gorm:"column:description" json:"description"`
+}
+
+type Location struct {
+	LocationID uint   `gorm:"primaryKey" json:"location_id"`
+	Shelf      string `json:"shelf"`
+	Position   string `json:"position"`
 }
 
 func main() {
@@ -38,9 +44,11 @@ func main() {
     log.Fatal("Database connection error: ", err)
   }
 
+  // Routerの登録
   router := mux.NewRouter()
   router.HandleFunc("/api/plants", getPlants(db)).Methods("GET")
   router.HandleFunc("/api/watering-history", getWateringHistory(db)).Methods("GET")
+  router.HandleFunc("/api/locations", getAllLocations(db)).Methods("GET")
 
   // CORS の設定
   c := cors.New(cors.Options{
@@ -99,5 +107,16 @@ func getWateringHistory(db *gorm.DB) http.HandlerFunc {
     }
 
     executeQueryAndRespond(w, db, query, &wateringHistory)
+  }
+}
+
+func getAllLocations(db *gorm.DB) http.HandlerFunc {
+  return func(w http.ResponseWriter, r *http.Request) {
+      var locations []Location
+      query := db.Table("locations").
+          Select("location_id, shelf, position").
+          Order("shelf, position")
+
+      executeQueryAndRespond(w, db, query, &locations)
   }
 }
