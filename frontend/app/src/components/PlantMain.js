@@ -73,7 +73,7 @@ const PlantMain = () => {
   };
 
   const handleRegisterPlant = (newPlant) => {
-    console.log('新しい植物を登録:', newPlant);
+    
     setIsDialogOpen(false);
   };
   

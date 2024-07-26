@@ -39,12 +39,10 @@ const PlantRegistrationDialog = ({ isOpen, onClose, onRegister }) => {
     }
   }
   
+  // locationをsetにして重複を削除し、配列に変換
   const shelves = [...new Set(locations.map(loc => loc.shelf))];
 
-  // 選択された棚に基づいて利用可能な位置のリストを作成
-  const positions = locations
-    .filter(loc => loc.shelf === shelf)
-    .map(loc => loc.position);
+  const positions = locations.map(loc => loc.position);
 
   return (
     <Dialog open={isOpen} onClose={onClose}>

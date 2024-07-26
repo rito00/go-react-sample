@@ -1,10 +1,10 @@
 import React from 'react';
-import PlantList from './components/PlantList';
+import PlantMain from './components/PlantMain';
 
 function App() {
   return (
     <div className="App">
-      <PlantList />
+      <PlantMain />
     </div>
   );
 }
