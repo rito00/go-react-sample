@@ -1,5 +1,11 @@
 USE kabu_db;
 
+DROP TABLE IF EXISTS watering_history;
+DROP TABLE IF EXISTS plant_states;
+DROP TABLE IF EXISTS plants;
+DROP TABLE IF EXISTS locations;
+DROP TABLE IF EXISTS fertilizer_recipes;
+
 CREATE TABLE locations (
     location_id INT PRIMARY KEY AUTO_INCREMENT,
     shelf VARCHAR(50),
