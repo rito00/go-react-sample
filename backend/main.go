@@ -22,19 +22,28 @@ type Plant struct {
   StateType string `json:"state_type"`
 }
 
-type WateringHistory struct {
-	ID                   uint      `gorm:"column:id" json:"-"`
-	PlantID              uint      `gorm:"column:plant_id" json:"plant_id"`
-	WateringDate         time.Time `gorm:"column:watering_date" json:"watering_date"`
-	Amount               float64   `gorm:"column:amount" json:"amount"`
-	FertilizerRecipeName string    `gorm:"column:recipe_name" json:"fertilizer_recipe_name"`
-	Description          string    `gorm:"column:description" json:"description"`
+type Watering struct {
+  ID                   uint      `gorm:"column:id" json:"-"`
+  PlantID              uint      `gorm:"column:plant_id" json:"plant_id"`
+  WateringDate         time.Time `gorm:"column:watering_date" json:"watering_date"`
+  Amount               float64   `gorm:"column:amount" json:"amount"`
+  FertilizerRecipeName string    `gorm:"column:recipe_name" json:"fertilizer_recipe_name"`
+  Description          string    `gorm:"column:description" json:"description"`
+}
+
+type PlantState struct {
+  ID            uint            `gorm:"column:id" json:"-"`
+  PlantID       uint            `gorm:"column:plant_id" json:"plant_id"`
+  Date          time.Time       `gorm:"column:state_date" json:"state_date"`
+  StateType     string          `gorm:"column:state_type" json:"state_type"`
+  HarvestWeight float64         `gorm:"column:harvest_weight" json:"harvest_weight"`
+  Description   string          `gorm:"column:description" json:"description"`
 }
 
 type Location struct {
-	LocationID uint   `gorm:"primaryKey" json:"location_id"`
-	Shelf      string `json:"shelf"`
-	Position   string `json:"position"`
+  LocationID uint   `gorm:"primaryKey" json:"location_id"`
+  Shelf      string `json:"shelf"`
+  Position   string `json:"position"`
 }
 
 func main() {
@@ -48,6 +57,7 @@ func main() {
   router := mux.NewRouter()
   router.HandleFunc("/api/plants", getPlants(db)).Methods("GET")
   router.HandleFunc("/api/watering-history", getWateringHistory(db)).Methods("GET")
+  router.HandleFunc("/api/state-history", getStateHistory(db)).Methods("GET")
   router.HandleFunc("/api/locations", getAllLocations(db)).Methods("GET")
 
   // CORS の設定
@@ -95,9 +105,9 @@ func getPlants(db *gorm.DB) http.HandlerFunc {
 
 func getWateringHistory(db *gorm.DB) http.HandlerFunc {
   return func(w http.ResponseWriter, r *http.Request) {
-    var wateringHistory []WateringHistory
+    var wateringHistory []Watering
     query := db.Table("watering_history").
-      Select("watering_history.watering_date, watering_history.amount, fertilizer_recipes.recipe_name, fertilizer_recipes.description").
+      Select("watering_history.watering_date, watering_history.amount, fertilizer_recipes.recipe_name, watering_history.description").
       Joins("JOIN plants ON plants.plant_id = watering_history.plant_id").
       Joins("LEFT JOIN fertilizer_recipes ON watering_history.fertilizer_recipe_id = fertilizer_recipes.recipe_id").
       Order("watering_history.watering_date DESC")
@@ -107,6 +117,22 @@ func getWateringHistory(db *gorm.DB) http.HandlerFunc {
     }
 
     executeQueryAndRespond(w, db, query, &wateringHistory)
+  }
+}
+
+func getStateHistory(db *gorm.DB) http.HandlerFunc {
+  return func(w http.ResponseWriter, r *http.Request) {
+      var stateHistory []PlantState
+      query := db.Table("plant_states").
+          Select("plant_states.state_date, plant_states.state_type, harvest_weight, plant_states.description").
+          Joins("JOIN plants ON plants.plant_id = plant_states.plant_id").
+          Order("plant_states.state_date DESC")
+
+      if plantID := r.URL.Query().Get("plant_id"); plantID != "" {
+          query = query.Where("plants.plant_id = ?", plantID)
+      }
+
+      executeQueryAndRespond(w, db, query, &stateHistory)
   }
 }
 
