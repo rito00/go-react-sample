@@ -48,11 +48,11 @@ CREATE TABLE plant_states (
 
 
 -- fertilizer_recipesにデータを挿入
-INSERT INTO fertilizer_recipes (recipe_name, description) VALUES
-('A液', ''),
-('B液', ''),
-('C液', ''),
-('D液', '');
+INSERT INTO fertilizer_recipes (recipe_name) VALUES
+('A液'),
+('B液'),
+('C液'),
+('D液');
 
 -- locationsにサンプルデータを挿入
 INSERT INTO locations (shelf, position) VALUES

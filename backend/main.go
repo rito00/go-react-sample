@@ -60,8 +60,10 @@ func main() {
   router.HandleFunc("/api/plants", getPlants(db)).Methods("GET")
   router.HandleFunc("/api/watering-history", getWateringHistory(db)).Methods("GET")
   router.HandleFunc("/api/state-history", getStateHistory(db)).Methods("GET")
-  router.HandleFunc("/api/locations", getAllLocations(db)).Methods("GET")
+  router.HandleFunc("/api/locations", getLocations(db)).Methods("GET")
 	router.HandleFunc("/api/state-types", getStateTypes(db)).Methods("GET")
+	router.HandleFunc("/api/shelves", getShelves(db)).Methods("GET")
+
 	// POST
 	router.HandleFunc("/api/plants", registerPlant(db)).Methods("POST")
 
@@ -141,7 +143,7 @@ func getStateHistory(db *gorm.DB) http.HandlerFunc {
   }
 }
 
-func getAllLocations(db *gorm.DB) http.HandlerFunc {
+func getLocations(db *gorm.DB) http.HandlerFunc {
   return func(w http.ResponseWriter, r *http.Request) {
       var locations []Location
       query := db.Table("locations").
@@ -150,6 +152,16 @@ func getAllLocations(db *gorm.DB) http.HandlerFunc {
 
       executeQueryAndRespond(w, db, query, &locations)
   }
+}
+
+func getShelves(db *gorm.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+			var shelves []string
+			query := db.Table("shelves").
+					Select("shelf_name")
+
+			executeQueryAndRespond(w, db, query, &shelves)
+	}
 }
 
 func getStateTypes(db *gorm.DB) http.HandlerFunc {
@@ -174,6 +186,7 @@ type RegisterPlant struct {
 	LocationID uint      `gorm:"column:location_id" json:"location_id"`
 	EntryDate  time.Time `gorm:"column:entry_date" json:"entry_date"`
 }
+
 func registerPlant(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 			var newPlant NewPlant
