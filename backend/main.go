@@ -59,6 +59,7 @@ func main() {
   router.HandleFunc("/api/watering-history", getWateringHistory(db)).Methods("GET")
   router.HandleFunc("/api/state-history", getStateHistory(db)).Methods("GET")
   router.HandleFunc("/api/locations", getAllLocations(db)).Methods("GET")
+	router.HandleFunc("/api/state-types", getStateTypes(db)).Methods("GET")
 
   // CORS の設定
   c := cors.New(cors.Options{
@@ -145,4 +146,15 @@ func getAllLocations(db *gorm.DB) http.HandlerFunc {
 
       executeQueryAndRespond(w, db, query, &locations)
   }
+}
+
+func getStateTypes(db *gorm.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+			var stateTypes []string
+			query := db.Table("plant_states").
+					Select("DISTINCT state_type").
+					Order("state_type")
+
+			executeQueryAndRespond(w, db, query, &stateTypes)
+	}
 }

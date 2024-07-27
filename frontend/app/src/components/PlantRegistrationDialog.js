@@ -13,22 +13,24 @@ import apiAxios from '../api/axios';
 import { ENDPOINTS } from '../api/endpoints';
 
 const PlantRegistrationDialog = ({ isOpen, onClose, onRegister }) => {
-  const [shelf, setShelf] = useState('');
-  const [position, setPosition] = useState('');
-  const [status, setStatus] = useState('');
   const [locations, setLocations] = useState([]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onRegister({ shelf, position, status });
-    setShelf('');
-    setPosition('');
-    setStatus('');
-  };
+  const [stateTypes, setStateTypes] = useState([]);
+  const [selectedShelf, setSelectedShelf] = useState('');
+  const [selectedPosition, setSelectedPosition] = useState('');
+  const [selectedState, setSelectedState] = useState('');
   
   useEffect(() => {
     fetchLocations();
+    fetchStateTypes();
   }, []);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onRegister({ shelf: selectedShelf, position: selectedPosition, state: selectedState });
+    setSelectedShelf('');
+    setSelectedPosition('');
+    setSelectedState('');
+  };
   
   const fetchLocations = async () => {
     try {
@@ -39,9 +41,18 @@ const PlantRegistrationDialog = ({ isOpen, onClose, onRegister }) => {
     }
   }
   
+  const fetchStateTypes = async () => {
+    try {
+      const response = await apiAxios.get(ENDPOINTS.STATE_TYPES);
+      setStateTypes(response.data);
+      console.log(response.data);
+    } catch (err){
+      console.error('Failed to fetch state types');
+    }
+  }
+  
   // locationをsetにして重複を削除し、配列に変換
   const shelves = [...new Set(locations.map(loc => loc.shelf))];
-
   const positions = locations.map(loc => loc.position);
 
   return (
@@ -53,8 +64,8 @@ const PlantRegistrationDialog = ({ isOpen, onClose, onRegister }) => {
             <InputLabel id="shelf-label">棚</InputLabel>
             <Select
               labelId="shelf-label"
-              value={shelf}
-              onChange={(e) => setShelf(e.target.value)}
+              value={selectedShelf}
+              onChange={(e) => setSelectedShelf(e.target.value)}
               required
             >
               {shelves.map((s) => (
@@ -66,8 +77,8 @@ const PlantRegistrationDialog = ({ isOpen, onClose, onRegister }) => {
             <InputLabel id="position-label">位置</InputLabel>
             <Select
               labelId="position-label"
-              value={position}
-              onChange={(e) => setPosition(e.target.value)}
+              value={selectedPosition}
+              onChange={(e) => setSelectedPosition(e.target.value)}
               required
             >
               {positions.map((p) => (
@@ -75,16 +86,19 @@ const PlantRegistrationDialog = ({ isOpen, onClose, onRegister }) => {
               ))}
             </Select>
           </FormControl>
-          <TextField
-            margin="normal"
-            id="status"
-            label="状態"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-          />
+          <FormControl fullWidth margin="normal">
+            <InputLabel id="state-label">状態</InputLabel>
+            <Select
+              labelId="state-label"
+              value={selectedState}
+              onChange={(e) => setSelectedState(e.target.value)}
+              required
+            >
+              {stateTypes.map((state) => (
+                <MenuItem key={state} value={state}>{state}</MenuItem>
+              ))} 
+            </Select>
+          </FormControl>
         </form>
       </DialogContent>
       <DialogActions>

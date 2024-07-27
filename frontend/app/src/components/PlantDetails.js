@@ -31,7 +31,8 @@ const PlantDetails = ({ plant, isOpen, onClose }) => {
         const response = await apiAxios.get((ENDPOINTS.STATE_HISTORY), {
           params: { plant_id: plant.plant_id }
         });
-        const sortedHistory = response.data.sort((a, b) => new Date(a.state_date) - new Date(b.state_date));
+        
+        const sortedHistory = response.data?.sort((a, b) => new Date(a.state_date) - new Date(b.state_date));
         setStateHistory(sortedHistory);
         setLoading(false);
       } catch (err) {
@@ -48,7 +49,6 @@ const PlantDetails = ({ plant, isOpen, onClose }) => {
   if (!isOpen || !plant) return null;
   if (loading) return <div>読み込み中...</div>;
   if (error) return <div>{error}</div>;
-
 
   return (
     <div className="plant-details">
