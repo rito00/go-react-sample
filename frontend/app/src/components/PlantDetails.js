@@ -3,6 +3,10 @@ import './styles.css'
 import apiAxios from '../api/axios';
 import { ENDPOINTS } from '../api/endpoints';
 
+import IconButton from "@mui/material/IconButton";
+import CloseIcon from "@mui/icons-material/Close";
+
+
 const PlantDetails = ({ plant, isOpen, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -52,7 +56,9 @@ const PlantDetails = ({ plant, isOpen, onClose }) => {
 
   return (
     <div className="plant-details">
-      <button onClick={onClose} className="close-button">閉じる</button>
+      <IconButton onClick={onClose} className="close-button">
+        <CloseIcon />
+      </IconButton>
       <h2>株の詳細</h2>
       <div className="plant-info">
         <p><strong>ID:</strong> {plant.plant_id}</p>

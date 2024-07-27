@@ -18,18 +18,30 @@ const PlantRegistrationDialog = ({ isOpen, onClose, onRegister }) => {
   const [selectedShelf, setSelectedShelf] = useState('');
   const [selectedPosition, setSelectedPosition] = useState('');
   const [selectedState, setSelectedState] = useState('');
+  const [harvestedAmount, setHarvestedAmount] = useState(0);
   
   useEffect(() => {
+    resetForm();
     fetchLocations();
     fetchStateTypes();
   }, []);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onRegister({ shelf: selectedShelf, position: selectedPosition, state: selectedState });
+  const resetForm = () => {
     setSelectedShelf('');
     setSelectedPosition('');
     setSelectedState('');
+    setHarvestedAmount(0);
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onRegister({ 
+      shelf: selectedShelf, 
+      position: selectedPosition, 
+      state: selectedState,
+      harvestedAmount: selectedState === 'harvested' ? harvestedAmount : null
+    });
+    resetForm(); 
   };
   
   const fetchLocations = async () => {
@@ -92,12 +104,23 @@ const PlantRegistrationDialog = ({ isOpen, onClose, onRegister }) => {
               labelId="state-label"
               value={selectedState}
               onChange={(e) => setSelectedState(e.target.value)}
-              required
+              required={true}
             >
               {stateTypes.map((state) => (
                 <MenuItem key={state} value={state}>{state}</MenuItem>
               ))} 
             </Select>
+          </FormControl>
+          <FormControl fullWidth margin="normal">
+            {selectedState === 'harvested' && (
+              <TextField
+                label="収穫量"
+                type="number"
+                value={harvestedAmount}
+                onChange={(e) => setHarvestedAmount(e.target.value)}
+                required
+              />
+            )}
           </FormControl>
         </form>
       </DialogContent>

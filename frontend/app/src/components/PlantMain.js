@@ -28,18 +28,18 @@ const PlantMain = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const sidebarRef = useRef(null);
 
-  useEffect(() => {
-    const fetchPlants = async () => {
-      try {
-        const response = await axios.get('http://localhost:8080/api/plants');
-        setPlants(response.data);
-        setLoading(false);
-      } catch (err) {
-        setError('エラーが発生しました。データを取得できませんでした。');
-        setLoading(false);
-      }
-    };
+  const fetchPlants = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/api/plants');
+      setPlants(response.data);
+      setLoading(false);
+    } catch (err) {
+      setError('エラーが発生しました。データを取得できませんでした。');
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchPlants();
   }, []);
 
@@ -72,9 +72,17 @@ const PlantMain = () => {
     setIsDialogOpen(false);
   };
 
-  const handleRegisterPlant = (newPlant) => {
-    
-    setIsDialogOpen(false);
+  const handleRegisterPlant = async (newPlant) => {
+    try {
+      const response = await axios.post('http://localhost:8080/api/plants', newPlant);
+      if (response.status === 201) {
+        await fetchPlants();
+      }
+    } catch (err) {
+      console.error('Failed to register plant:', err);
+    } finally { 
+      setIsDialogOpen(false);
+    }
   };
   
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
