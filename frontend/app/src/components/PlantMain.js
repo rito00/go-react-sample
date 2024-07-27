@@ -112,17 +112,17 @@ const PlantMain = () => {
   
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
-  // const handleSort = (key) => {
-  //   let direction = 'asc';
-  //   if (sortConfig.key === key && sortConfig.direction === 'asc') {
-  //     direction = 'desc';
-  //   }
-  //   else if (sortConfig.key === key && sortConfig.direction === 'desc') {
-  //     setSortConfig({ key:null, direction });
-  //     return
-  //   }
-  //   setSortConfig({ key, direction });
-  // };
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    else if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      setSortConfig({ key:null, direction });
+      return
+    }
+    setSortConfig({ key, direction });
+  };
   
   const handleShelfClick = (shelf) => {
     setSelectedShelf(shelf);
@@ -304,6 +304,7 @@ const PlantMain = () => {
                               <TableSortLabel
                                 active={sortConfig.key === column.id}
                                 direction={sortConfig.key === column.id ? sortConfig.direction : 'asc'}
+                                onClick={() => handleSort(column.id)}
                               >
                                 {column.label}
                               </TableSortLabel>
