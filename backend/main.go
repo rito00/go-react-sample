@@ -16,6 +16,7 @@ import (
 
 type Plant struct {
   PlantID   uint   `gorm:"primaryKey" json:"plant_id"`
+	LocationID uint   `json:"-"`
   Shelf     string `json:"shelf"`
   Position  string `json:"position"`
   EntryDate string `json:"entry_date"`
@@ -55,11 +56,14 @@ func main() {
 
   // Routerの登録
   router := mux.NewRouter()
+	// GET
   router.HandleFunc("/api/plants", getPlants(db)).Methods("GET")
   router.HandleFunc("/api/watering-history", getWateringHistory(db)).Methods("GET")
   router.HandleFunc("/api/state-history", getStateHistory(db)).Methods("GET")
   router.HandleFunc("/api/locations", getAllLocations(db)).Methods("GET")
 	router.HandleFunc("/api/state-types", getStateTypes(db)).Methods("GET")
+	// POST
+	router.HandleFunc("/api/plants", registerPlant(db)).Methods("POST")
 
   // CORS の設定
   c := cors.New(cors.Options{
@@ -156,5 +160,69 @@ func getStateTypes(db *gorm.DB) http.HandlerFunc {
 					Order("state_type")
 
 			executeQueryAndRespond(w, db, query, &stateTypes)
+	}
+}
+
+type NewPlant struct {
+	Shelf    string `json:"shelf"`
+	Position string `json:"position"`
+	State    string `json:"state"`
+}
+
+type RegisterPlant struct {
+	PlantID    uint      `gorm:"primaryKey;column:plant_id" json:"plant_id"`
+	LocationID uint      `gorm:"column:location_id" json:"location_id"`
+	EntryDate  time.Time `gorm:"column:entry_date" json:"entry_date"`
+}
+func registerPlant(db *gorm.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+			var newPlant NewPlant
+			if err := json.NewDecoder(r.Body).Decode(&newPlant); err != nil {
+					http.Error(w, "Invalid request body", http.StatusBadRequest)
+					return
+			}
+
+			// トランザクションを開始
+			tx := db.Begin()
+
+			// 1. locationを取得
+			var location Location
+			if err := tx.Where("shelf = ? AND position = ?", newPlant.Shelf, newPlant.Position).First(&location).Error; err != nil {
+					tx.Rollback()
+					http.Error(w, "Location not found", http.StatusNotFound)
+					return
+			}
+
+			// 2. plantsテーブルに新しいレコードを作成
+			plant := RegisterPlant{
+					LocationID: location.LocationID,
+					EntryDate:  time.Now(),
+			}
+			if err := tx.Table("plants").Create(&plant).Error; err != nil {
+					tx.Rollback()
+					http.Error(w, "Failed to create plant", http.StatusInternalServerError)
+					return
+			}
+
+			// 3. plant_statesテーブルに新しいレコードを作成
+			plantState := PlantState{
+					PlantID:   plant.PlantID,
+					Date:      time.Now(),
+					StateType: newPlant.State,
+			}
+			if err := tx.Table("plant_states").Create(&plantState).Error; err != nil {
+					tx.Rollback()
+					http.Error(w, "Failed to create plant state", http.StatusInternalServerError)
+					return
+			}
+
+			// トランザクションをコミット
+			if err := tx.Commit().Error; err != nil {
+					http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
+					return
+			}
+
+			w.WriteHeader(http.StatusCreated)
+			json.NewEncoder(w).Encode(map[string]uint{"plant_id": plant.PlantID})
 	}
 }
