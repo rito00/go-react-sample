@@ -9,21 +9,8 @@ import PlantDetails from './conponents/PlantDetails';
 import PlantRegistrationDialog from './conponents/PlantRegistrationDialog';
 
 import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  TableSortLabel,
-  Paper, 
   Typography,
   Button,
-  MenuItem,
-  Select,
-  Grid,
-  IconButton,
-  Tab,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -207,13 +194,7 @@ const PlantMain = () => {
   if (error) return <div>{error}</div>;
   
   return (
-    <div style={{ 
-      display: 'flex',
-      flexDirection: 'column',
-      width: '100%',
-      height: '100vh',
-    }}>
-
+    <div>
       <Header onOpenDialog={handleOpenDialog} />
 
       {/* 棚のタイル表示 */}
@@ -256,8 +237,6 @@ const PlantMain = () => {
         onClose={handleCloseDialog}
         onRegister={handleRegisterPlant}
       />
-      
-      {/* 新規棚作成ダイアログ */}
     </div>
   );
 };

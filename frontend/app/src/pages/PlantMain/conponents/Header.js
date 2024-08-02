@@ -8,7 +8,6 @@ const Header = ({ onOpenDialog }) => {
       justifyContent: 'space-between',
       alignItems: 'center',
       marginBottom: '20px',
-      padding: "20px"
     }}>
       <Typography variant="h4" component="h1">
         部屋1
