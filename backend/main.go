@@ -27,9 +27,11 @@ func main() {
   router.HandleFunc("/api/plants", getPlants(db)).Methods("GET")
   router.HandleFunc("/api/watering-history", getWateringHistory(db)).Methods("GET")
   router.HandleFunc("/api/state-history", getStateHistory(db)).Methods("GET")
-  router.HandleFunc("/api/locations", getLocations(db)).Methods("GET")
 	router.HandleFunc("/api/state-types", getStateTypes(db)).Methods("GET")
 	router.HandleFunc("/api/shelves", getShelves(db)).Methods("GET")
+	router.HandleFunc("/api/levels", getLevels(db)).Methods("GET")
+	router.HandleFunc("/api/positions", getPositions(db)).Methods("GET")
+	router.HandleFunc("/api/position", getPosition(db)).Methods("GET")
 
 	// POST
 	router.HandleFunc("/api/plants", registerPlant(db)).Methods("POST")
@@ -50,31 +52,32 @@ func main() {
 
 // executeQueryAndRespond は、クエリを実行し、結果をJSONとして返す
 func executeQueryAndRespond(w http.ResponseWriter, db *gorm.DB, query *gorm.DB, result interface{}) {
-  if err := query.Scan(result).Error; err != nil {
-      log.Printf("Database query error: %v", err)
-      http.Error(w, "Internal server error", http.StatusInternalServerError)
-      return
-  }
+	if err := query.Scan(result).Error; err != nil {
+			log.Printf("Database query error: %v", err)
+			http.Error(w, fmt.Sprintf("Database error: %v", err), http.StatusInternalServerError)
+			return
+	}
 
-  w.Header().Set("Content-Type", "application/json")
-  if err := json.NewEncoder(w).Encode(result); err != nil {
-      log.Printf("JSON encoding error: %v", err)
-      http.Error(w, "Internal server error", http.StatusInternalServerError)
-      return
-  }
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(result); err != nil {
+			log.Printf("JSON encoding error: %v", err)
+			http.Error(w, fmt.Sprintf("JSON encoding error: %v", err), http.StatusInternalServerError)
+			return
+	}
 }
 
-
 func getPlants(db *gorm.DB) http.HandlerFunc {
-  return func(w http.ResponseWriter, r *http.Request) {
-    var plants []Plant
-    query := db.Table("plants").
-      Select("plants.plant_id, locations.shelf, locations.position, plants.entry_date, COALESCE(plant_states.state_type, '未設定') as state_type").
-      Joins("JOIN locations ON plants.location_id = locations.location_id").
-      Joins("LEFT JOIN plant_states ON plants.plant_id = plant_states.plant_id")
+	return func(w http.ResponseWriter, r *http.Request) {
+			var plants []Plant
+			query := db.Table("plants").
+					Select("plants.plant_id, shelves.name AS shelf, levels.level_number AS level, positions.position_number AS position, plants.entry_date, plant_states.state_type AS state_type").
+					Joins("JOIN positions ON plants.position_id = positions.id").
+					Joins("JOIN levels ON positions.level_id = levels.id").
+					Joins("JOIN shelves ON levels.shelf_id = shelves.id").
+					Joins("LEFT JOIN (SELECT ps.plant_id, ps.state_type FROM plant_states ps INNER JOIN (SELECT plant_id, MAX(state_date) as max_date FROM plant_states GROUP BY plant_id) pmax ON ps.plant_id = pmax.plant_id AND ps.state_date = pmax.max_date) AS plant_states ON plants.plant_id = plant_states.plant_id")
 
-    executeQueryAndRespond(w, db, query, &plants)
-  }
+			executeQueryAndRespond(w, db, query, &plants)
+	}
 }
 
 func getWateringHistory(db *gorm.DB) http.HandlerFunc {
@@ -110,24 +113,42 @@ func getStateHistory(db *gorm.DB) http.HandlerFunc {
   }
 }
 
-func getLocations(db *gorm.DB) http.HandlerFunc {
-  return func(w http.ResponseWriter, r *http.Request) {
-      var locations []Location
-      query := db.Table("locations").
-          Select("location_id, shelf, position").
-          Order("shelf, position")
-
-      executeQueryAndRespond(w, db, query, &locations)
-  }
-}
-
 func getShelves(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-			var shelves []string
+			var shelves []Shelf
 			query := db.Table("shelves").
-					Select("shelf_name")
-
+					Select("id, name")
 			executeQueryAndRespond(w, db, query, &shelves)
+	}
+}
+
+func getLevels(db *gorm.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+			var levels []Level
+			shelfID := r.URL.Query().Get("shelf_id")
+			if shelfID == "" {
+					http.Error(w, "Missing shelf_id parameter", http.StatusBadRequest)
+					return
+			}
+			query := db.Table("levels").
+					Select("id, level_number").
+					Where("shelf_id = ?", shelfID)
+			executeQueryAndRespond(w, db, query, &levels)
+	}
+}
+
+func getPositions(db *gorm.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+			var positions []Position
+			levelID := r.URL.Query().Get("level_id")
+			if levelID == "" {
+					http.Error(w, "Missing level_id parameter", http.StatusBadRequest)
+					return
+			}
+			query := db.Table("positions").
+					Select("id, position_number").
+					Where("level_id = ?", levelID)
+			executeQueryAndRespond(w, db, query, &positions)
 	}
 }
 
@@ -192,5 +213,47 @@ func registerPlant(db *gorm.DB) http.HandlerFunc {
 
 			w.WriteHeader(http.StatusCreated)
 			json.NewEncoder(w).Encode(map[string]uint{"plant_id": plant.PlantID})
+	}
+}
+
+func getPosition(db *gorm.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+			positionID := r.URL.Query().Get("position_id")
+			if positionID == "" {
+					http.Error(w, "Missing position_id parameter", http.StatusBadRequest)
+					return
+			}
+
+			var result struct {
+					ShelfName      string `json:"shelf_name"`
+					LevelNumber    int    `json:"level_number"`
+					PositionNumber int    `json:"position_number"`
+			}
+
+			query := db.Raw(`
+					SELECT s.name AS shelf_name, l.level_number, p.position_number
+					FROM positions p
+					JOIN levels l ON p.level_id = l.id
+					JOIN shelves s ON l.shelf_id = s.id
+					WHERE p.id = ?
+			`, positionID)
+
+			if err := query.Scan(&result).Error; err != nil {
+					log.Printf("Error querying database: %v", err)
+					if err == gorm.ErrRecordNotFound {
+							http.Error(w, "Position not found", http.StatusNotFound)
+					} else {
+							log.Printf("Database query error: %v", err)
+							http.Error(w, fmt.Sprintf("Internal server error: %v", err), http.StatusInternalServerError)
+					}
+					return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			if err := json.NewEncoder(w).Encode(result); err != nil {
+					log.Printf("Error encoding JSON: %v", err)
+					http.Error(w, "Error encoding response", http.StatusInternalServerError)
+					return
+			}
 	}
 }

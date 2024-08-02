@@ -5,12 +5,12 @@ import (
 )
 
 type Plant struct {
-  PlantID   uint   `gorm:"primaryKey" json:"plant_id"`
-	LocationID uint   `json:"-"`
-  Shelf     string `json:"shelf"`
-  Position  string `json:"position"`
-  EntryDate string `json:"entry_date"`
-  StateType string `json:"state_type"`
+	PlantID   uint   `gorm:"column:plant_id" json:"plant_id"`
+	Shelf     string `gorm:"column:shelf" json:"shelf"`
+	Level     string `gorm:"column:level" json:"level"`
+	Position  string `gorm:"column:position" json:"position"`
+	EntryDate string `gorm:"column:entry_date" json:"entry_date"`
+	StateType string `gorm:"column:state_type" json:"state_type"`
 }
 
 type Watering struct {
@@ -47,4 +47,19 @@ type RegisterPlant struct {
 	PlantID    uint      `gorm:"primaryKey;column:plant_id" json:"plant_id"`
 	LocationID uint      `gorm:"column:location_id" json:"location_id"`
 	EntryDate  time.Time `gorm:"column:entry_date" json:"entry_date"`
+}
+
+type Shelf struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type Level struct {
+	ID          int `json:"id"`
+	LevelNumber int `json:"level_number"`
+}
+
+type Position struct {
+	ID             int `json:"id"`
+	PositionNumber int `json:"position_number"`
 }

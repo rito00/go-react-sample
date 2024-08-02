@@ -19,6 +19,7 @@ import {
   Select,
   Grid,
   IconButton,
+  Tab,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -32,6 +33,8 @@ const PlantMain = () => {
   const [shelves, setShelves] = useState([]);
   const [selectedPlant, setSelectedPlant] = useState(null);
   const [selectedShelf, setSelectedShelf] = useState(null);
+  
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   
   const [plantListOpen, setPlantListOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -63,21 +66,23 @@ const PlantMain = () => {
     try {
       const response = await apiAxios.get(ENDPOINTS.PLANTS);
       setPlants(response.data);
+      console.log('Fetched plants:', response.data);
       setLoading(false);
     } catch (err) {
+      console.error('Error fetching plants:', err);
       setError('エラーが発生しました。データを取得できませんでした。');
       setLoading(false);
     }
   };
-
+  
   const fetchShelves = async () => {
-    // TODO: Fetch shelves from API
-    const shelves = []
-    for (let i = 1; i <= 64; i++) {
-      shelves.push("棚"+i);
+    try {
+      const response = await apiAxios.get(ENDPOINTS.SHELVES);
+      setShelves(response.data);
+      console.log('Fetched shelves:', response.data);
+    } catch (err) {
+      console.error('Failed to fetch shelves:', err);
     }
-    console.log("shelves", shelves);
-    setShelves(shelves);
   };
   
   const handlePlantClick = (plant) => {
@@ -102,6 +107,7 @@ const PlantMain = () => {
     try {
       const response = await apiAxios.post(ENDPOINTS.PLANTS, newPlant);
       if (response.status === 201) {
+        console.log('New plant registered:', response.data);
         await fetchPlants();
       }
     } catch (err) {
@@ -111,7 +117,7 @@ const PlantMain = () => {
     }
   };
   
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
 
   const handleSort = (key) => {
     let direction = 'asc';
@@ -158,17 +164,20 @@ const PlantMain = () => {
         return 0;
       });
     }
+    console.log('Sorted plants:', sortablePlants);
     return sortablePlants;
   }, [latestPlants, sortConfig]);
-
+  
   const filteredPlants = useMemo(() => {
     if (!selectedShelf) return [];
-    return sortedPlants.filter(plant => plant.shelf === selectedShelf);
+    const filtered = sortedPlants.filter(plant => plant.shelf === selectedShelf);
+    console.log('Filtered plants for shelf', selectedShelf, ':', filtered);
+    return filtered;
   }, [sortedPlants, selectedShelf]);
 
   const columns = [
-    { id: 'plant_id', label: 'ID', sortable: true },
-    { id: 'location', label: '場所', sortable: true },
+    { id: 'level', label: '階層', sortable: true },
+    { id: 'position', label: '位置', sortable: true },
     { id: 'entry_date', label: '登録日', sortable: true },
     { id: 'state_type', label: '状態', sortable: false },
   ];
@@ -176,27 +185,6 @@ const PlantMain = () => {
   if (loading) return <div>読み込み中...</div>;
   if (error) return <div>{error}</div>;
   
-  const variants = {
-    open: { 
-      opacity: 1, 
-      x: 0,
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 30
-      }
-    },
-    closed: { 
-      opacity: 0, 
-      x: "100%",
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 30
-      }
-    },
-  };
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
       
@@ -226,15 +214,15 @@ const PlantMain = () => {
                   padding: '20px',
                   textAlign: 'center',
                   cursor: 'pointer',
-                  backgroundColor: selectedShelf === shelf ? '#f5f5f5' : 'white',
+                  backgroundColor: selectedShelf === shelf.name ? '#f5f5f5' : 'white',
                 }}
-                onClick={() => handleShelfClick(shelf)}
+                onClick={() => handleShelfClick(shelf.name)}
               >
-                {shelf}
+                {shelf.name}
               </Paper>
             </Grid>
-          ))}
-        </Grid>
+        ))}
+      </Grid>
         
         {/* 株一覧オーバーレイ */}
         <AnimatePresence>
@@ -326,8 +314,8 @@ const PlantMain = () => {
                             style={{ cursor: 'pointer' }}
                             className="plant-row"
                           >
-                            <TableCell>{plant.plant_id}</TableCell>
-                            <TableCell>{`${plant.shelf} - ${plant.position}`}</TableCell>
+                            <TableCell>{plant.level}</TableCell>
+                            <TableCell>{plant.position}</TableCell>
                             <TableCell>{new Date(plant.entry_date).toLocaleDateString()}</TableCell>
                             <TableCell>{plant.state_type || '未設定'}</TableCell>
                           </TableRow>

@@ -13,21 +13,39 @@ import apiAxios from '../api/axios';
 import { ENDPOINTS } from '../api/endpoints';
 
 const PlantRegistrationDialog = ({ isOpen, onClose, onRegister }) => {
-  const [locations, setLocations] = useState([]);
+  const [shelves, setShelves] = useState([]);
+  const [levels, setLevels] = useState([]);
+  const [positions, setPositions] = useState([]);
   const [stateTypes, setStateTypes] = useState([]);
   const [selectedShelf, setSelectedShelf] = useState('');
+  const [selectedLevel, setSelectedLevel] = useState('');
   const [selectedPosition, setSelectedPosition] = useState('');
   const [selectedState, setSelectedState] = useState('');
   const [harvestedAmount, setHarvestedAmount] = useState(0);
+  const [isFormValid, setIsFormValid] = useState(false); // 登録ボタンの制御
   
   useEffect(() => {
     resetForm();
-    fetchLocations();
+    fetchShelves();
     fetchStateTypes();
   }, []);
 
+  useEffect(() => {
+    const validateForm = () => {
+      const isValid = selectedShelf !== '' &&
+                      selectedLevel !== '' &&
+                      selectedPosition !== '' &&
+                      selectedState !== '' &&
+                      (selectedState !== 'harvested' || (selectedState === 'harvested' && harvestedAmount > 0));
+      setIsFormValid(isValid);
+    };
+  
+    validateForm();
+  }, [selectedShelf, selectedLevel, selectedPosition, selectedState, harvestedAmount]);
+  
   const resetForm = () => {
     setSelectedShelf('');
+    setSelectedLevel('');
     setSelectedPosition('');
     setSelectedState('');
     setHarvestedAmount(0);
@@ -37,6 +55,7 @@ const PlantRegistrationDialog = ({ isOpen, onClose, onRegister }) => {
     e.preventDefault();
     onRegister({ 
       shelf: selectedShelf, 
+      level: selectedLevel,
       position: selectedPosition, 
       state: selectedState,
       harvestedAmount: selectedState === 'harvested' ? harvestedAmount : null
@@ -44,12 +63,30 @@ const PlantRegistrationDialog = ({ isOpen, onClose, onRegister }) => {
     resetForm(); 
   };
   
-  const fetchLocations = async () => {
+  const fetchShelves = async () => {
     try {
-      const response = await apiAxios.get(ENDPOINTS.LOCATIONS);
-      setLocations(response.data);
+      const response = await apiAxios.get(ENDPOINTS.SHELVES);
+      setShelves(response.data);
     } catch (err){
-      console.error('Failed to fetch locations');
+      console.error('Failed to fetch shelves');
+    }
+  }
+
+  const fetchLevels = async (shelfId) => {
+    try {
+      const response = await apiAxios.get(`${ENDPOINTS.LEVELS}?shelf_id=${shelfId}`);
+      setLevels(response.data);
+    } catch (err){
+      console.error('Failed to fetch levels');
+    }
+  }
+
+  const fetchPositions = async (levelId) => {
+    try {
+      const response = await apiAxios.get(`${ENDPOINTS.POSITIONS}?level_id=${levelId}`);
+      setPositions(response.data);
+    } catch (err){
+      console.error('Failed to fetch positions');
     }
   }
   
@@ -57,15 +94,25 @@ const PlantRegistrationDialog = ({ isOpen, onClose, onRegister }) => {
     try {
       const response = await apiAxios.get(ENDPOINTS.STATE_TYPES);
       setStateTypes(response.data);
-      console.log(response.data);
     } catch (err){
       console.error('Failed to fetch state types');
     }
   }
-  
-  // locationをsetにして重複を削除し、配列に変換
-  const shelves = [...new Set(locations.map(loc => loc.shelf))];
-  const positions = locations.map(loc => loc.position);
+
+  const handleShelfChange = (e) => {
+    const shelfId = e.target.value;
+    setSelectedShelf(shelfId);
+    setSelectedLevel('');
+    setSelectedPosition('');
+    fetchLevels(shelfId);
+  };
+
+  const handleLevelChange = (e) => {
+    const levelId = e.target.value;
+    setSelectedLevel(levelId);
+    setSelectedPosition('');
+    fetchPositions(levelId);
+  };
 
   return (
     <Dialog open={isOpen} onClose={onClose}>
@@ -77,11 +124,25 @@ const PlantRegistrationDialog = ({ isOpen, onClose, onRegister }) => {
             <Select
               labelId="shelf-label"
               value={selectedShelf}
-              onChange={(e) => setSelectedShelf(e.target.value)}
+              onChange={handleShelfChange}
               required
             >
-              {shelves.map((s) => (
-                <MenuItem key={s} value={s}>{s}</MenuItem>
+              {shelves.map((shelf) => (
+                <MenuItem key={shelf.id} value={shelf.id}>{shelf.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth margin="normal">
+            <InputLabel id="level-label">階層</InputLabel>
+            <Select
+              labelId="level-label"
+              value={selectedLevel}
+              onChange={handleLevelChange}
+              required
+              disabled={!selectedShelf}
+            >
+              {levels.map((level) => (
+                <MenuItem key={level.id} value={level.id}>{level.level_number}</MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -92,9 +153,10 @@ const PlantRegistrationDialog = ({ isOpen, onClose, onRegister }) => {
               value={selectedPosition}
               onChange={(e) => setSelectedPosition(e.target.value)}
               required
+              disabled={!selectedLevel}
             >
-              {positions.map((p) => (
-                <MenuItem key={p} value={p}>{p}</MenuItem>
+              {positions.map((position) => (
+                <MenuItem key={position.id} value={position.id}>{position.position_number}</MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -126,7 +188,14 @@ const PlantRegistrationDialog = ({ isOpen, onClose, onRegister }) => {
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>キャンセル</Button>
-        <Button onClick={handleSubmit} variant="contained" color="primary">登録</Button>
+        <Button 
+          onClick={handleSubmit} 
+          variant="contained" 
+          color="primary" 
+          disabled={!isFormValid}
+        >
+          登録
+        </Button>
       </DialogActions>
     </Dialog>
   );

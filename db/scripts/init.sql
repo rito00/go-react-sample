@@ -1,22 +1,38 @@
 USE kabu_db;
-
 DROP TABLE IF EXISTS watering_history;
 DROP TABLE IF EXISTS plant_states;
 DROP TABLE IF EXISTS plants;
-DROP TABLE IF EXISTS locations;
+DROP TABLE IF EXISTS positions;
+DROP TABLE IF EXISTS levels;
+DROP TABLE IF EXISTS shelves;
 DROP TABLE IF EXISTS fertilizer_recipes;
 
-CREATE TABLE locations (
-    location_id INT PRIMARY KEY AUTO_INCREMENT,
-    shelf VARCHAR(50),
-    position VARCHAR(50)
+CREATE TABLE shelves (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE levels (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    shelf_id INT NOT NULL,
+    level_number INT NOT NULL,
+    FOREIGN KEY (shelf_id) REFERENCES shelves(id),
+    UNIQUE KEY (shelf_id, level_number)
+);
+
+CREATE TABLE positions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    level_id INT NOT NULL,
+    position_number INT NOT NULL,
+    FOREIGN KEY (level_id) REFERENCES levels(id),
+    UNIQUE KEY (level_id, position_number)
 );
 
 CREATE TABLE plants (
     plant_id INT PRIMARY KEY AUTO_INCREMENT,
-    location_id INT,
+    position_id INT UNIQUE,
     entry_date DATETIME,
-    FOREIGN KEY (location_id) REFERENCES locations(location_id)
+    FOREIGN KEY (position_id) REFERENCES positions(id)
 );
 
 CREATE TABLE fertilizer_recipes (
@@ -54,31 +70,77 @@ INSERT INTO fertilizer_recipes (recipe_name) VALUES
 ('C液'),
 ('D液');
 
--- locationsにサンプルデータを挿入
-INSERT INTO locations (shelf, position) VALUES
-('棚1', 'A1'),
-('棚1', 'A2'),
-('棚2', 'B1'),
-('棚2', 'B2'),
-('棚3', 'C1'),
-('棚3', 'C2'),
-('棚4', 'D1'),
-('棚4', 'D2'),
-('棚5', 'E1'),
-('棚5', 'E2');
+-- shelvesにデータを挿入
+INSERT INTO shelves (name) VALUES
+('A棚'),
+('B棚'),
+('C棚'),
+('D棚'),
+('E棚');
 
--- plantsにサンプルデータを挿入
-INSERT INTO plants (location_id, entry_date) VALUES
-(1, '2024-07-01 10:00:00'),
-(2, '2024-07-02 11:00:00'),
-(3, '2024-07-03 09:00:00'),
-(4, '2024-07-04 14:00:00'),
-(5, '2024-07-05 16:00:00'),
-(6, '2024-07-06 10:00:00'),
-(7, '2024-07-07 11:00:00'),
-(8, '2024-07-08 09:00:00'),
-(9, '2024-07-09 14:00:00'),
-(10, '2024-07-10 16:00:00');
+-- levelsにデータを挿入
+INSERT INTO levels (shelf_id, level_number) VALUES
+(1, 1),
+(1, 2),
+(1, 3),
+(1, 4),
+(1, 5),
+(2, 1),
+(2, 2),
+(2, 3),
+(2, 4),
+(2, 5),
+(3, 1),
+(3, 2),
+(3, 3),
+(3, 4),
+(3, 5),
+(4, 1),
+(4, 2),
+(4, 3),
+(4, 4),
+(4, 5),
+(5, 1),
+(5, 2),
+(5, 3),
+(5, 4),
+(5, 5);
+
+-- positionsにデータを挿入 (各棚の各レベルに20個のpositionを持つ)
+INSERT INTO positions (level_id, position_number)
+SELECT l.id, p.position_number
+FROM levels l
+CROSS JOIN (
+    SELECT 1 AS position_number UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5
+    UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9 UNION SELECT 10
+    UNION SELECT 11 UNION SELECT 12 UNION SELECT 13 UNION SELECT 14 UNION SELECT 15
+    UNION SELECT 16 UNION SELECT 17 UNION SELECT 18 UNION SELECT 19 UNION SELECT 20
+) p
+ORDER BY l.id, p.position_number;
+
+
+-- plantsにサンプルデータを挿入 0 - 100くらいまで適当に
+-- 一時テーブルを作成して各棚からランダムなポジションを選択
+CREATE TEMPORARY TABLE temp_random_positions AS
+SELECT p.id AS position_id
+FROM positions p
+JOIN levels l ON p.level_id = l.id
+JOIN shelves s ON l.shelf_id = s.id
+GROUP BY s.id, p.id
+ORDER BY RAND();
+
+-- plantsテーブルにデータを挿入
+INSERT INTO plants (position_id, entry_date)
+SELECT 
+    position_id,
+    DATE_ADD('2024-07-01', INTERVAL FLOOR(RAND() * 60) DAY) AS entry_date
+FROM 
+    temp_random_positions
+LIMIT 50;
+
+-- 一時テーブルを削除
+DROP TEMPORARY TABLE temp_random_positions;
+
 
 -- plant_statesにサンプルデータを挿入
 INSERT INTO plant_states (plant_id, state_date, state_type, harvest_weight, description) VALUES
