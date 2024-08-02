@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiAxios from '../api/axios';
+import Header from './containers/Header';
+import ShelfGrid from './containers/ShelfGrid';
+import PlantListOverlay from './containers/PlantListOverlay';
+import PlantTable from './containers/PlantTable';
 import PlantDetails from './PlantDetails';
 import PlantRegistrationDialog from './PlantRegistrationDialog';
 
@@ -116,8 +120,6 @@ const PlantMain = () => {
       setIsDialogOpen(false);
     }
   };
-  
-
 
   const handleSort = (key) => {
     let direction = 'asc';
@@ -153,17 +155,35 @@ const PlantMain = () => {
 
   const sortedPlants = useMemo(() => {
     let sortablePlants = [...latestPlants];
-    if (sortConfig.key !== null) {
+  
+    if (sortConfig.key === null) {
+      // 初期ソート（階層→位置→登録日の順で降順）
       sortablePlants.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
+        if (a.level !== b.level) return a.level - b.level;
+        if (a.position !== b.position) return a.position - b.position;
+        return new Date(a.entry_date) - new Date(b.entry_date);
+      });
+    } else {
+      // ユーザーが選択したソート設定のみを適用
+      sortablePlants.sort((a, b) => {
+        if (sortConfig.key === 'entry_date') {
+          // 日付の場合は特別な比較を行う
+          return sortConfig.direction === 'asc' 
+            ? new Date(a.entry_date) - new Date(b.entry_date)
+            : new Date(b.entry_date) - new Date(a.entry_date);
+        } else {
+          // 数値や文字列の場合の一般的な比較
+          if (a[sortConfig.key] < b[sortConfig.key]) {
+            return sortConfig.direction === 'asc' ? -1 : 1;
+          }
+          if (a[sortConfig.key] > b[sortConfig.key]) {
+            return sortConfig.direction === 'asc' ? 1 : -1;
+          }
+          return 0;
         }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
-        return 0;
       });
     }
+  
     console.log('Sorted plants:', sortablePlants);
     return sortablePlants;
   }, [latestPlants, sortConfig]);
@@ -186,151 +206,51 @@ const PlantMain = () => {
   if (error) return <div>{error}</div>;
   
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-      
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <Typography variant="h4" component="h1">
-          部屋1
-        </Typography>
-        <div>
-          <Button onClick={handleOpenDialog} style={{ marginRight: '10px' }}>株の新規登録</Button>
-          <Button>その他の情報</Button>
-        </div>
-      </div>
-      
-        <PlantRegistrationDialog
-          isOpen={isDialogOpen}
-          onClose={handleCloseDialog}
-          onRegister={handleRegisterPlant}
-        />
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%'}}>
 
-        {/* 棚のタイル表示 */}
-        <Grid container spacing={2} style={{ marginBottom: '20px' }}>
-          {shelves.map((shelf) => (
-            <Grid item key={shelf.id} xs={6} sm={4} md={3} lg={2} xl={1}>
-              <Paper
-                elevation={3}
-                style={{
-                  padding: '20px',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  backgroundColor: selectedShelf === shelf.name ? '#f5f5f5' : 'white',
-                }}
-                onClick={() => handleShelfClick(shelf.name)}
-              >
-                {shelf.name}
-              </Paper>
-            </Grid>
-        ))}
-      </Grid>
-        
-        {/* 株一覧オーバーレイ */}
-        <AnimatePresence>
-          {plantListOpen && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.5 }}
-                exit={{ opacity: 0 }}
-                style={{
-                  position: 'fixed',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: 'black',
-                  zIndex: 10,
-                }}
-                onClick={handleClosePlantList}
+      <Header onOpenDialog={handleOpenDialog} />
+
+      {/* 棚のタイル表示 */}
+      <ShelfGrid shelves={shelves} selectedShelf={selectedShelf} onShelfClick={handleShelfClick} />
+      
+      {/* 株一覧オーバーレイ */}
+      <PlantListOverlay isOpen={plantListOpen} onClose={handleClosePlantList}>
+        {sidebarOpen ? (
+          <>
+            <Button onClick={handleBackToList} startIcon={<ArrowBackIcon />}>
+              一覧に戻る
+            </Button>
+            <div ref={sidebarRef}>
+              <PlantDetails 
+                plant={selectedPlant} 
+                isOpen={sidebarOpen} 
+                onClose={() => setSidebarOpen(false)} 
               />
-              <motion.div
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 50 }}
-                style={{
-                  position: 'fixed',
-                  top: '10%',
-                  left: '10%',
-                  right: '10%',
-                  bottom: '10%',
-                  backgroundColor: 'white',
-                  borderRadius: '8px',
-                  padding: '20px',
-                  zIndex: 11,
-                  overflow: 'auto',
-                }}
-              >
-                <IconButton onClick={handleClosePlantList} style={{ position: 'absolute', top: 10, right: 10 }} >
-                  <CloseIcon />
-                </IconButton>
-                
-                {sidebarOpen ? (
-                <>
-                  <Button onClick={handleBackToList} startIcon={<ArrowBackIcon />}>
-                    一覧に戻る
-                  </Button>
-                  <div ref={sidebarRef}>
-                    <PlantDetails 
-                      plant={selectedPlant} 
-                      isOpen={sidebarOpen} 
-                      onClose={() => setSidebarOpen(false)} 
-                    />
-                  </div>  
-                </>
-              ) : (
-                <>
-                  <Typography variant="h5" gutterBottom>
-                    {selectedShelf} の株一覧
-                  </Typography>
-                  
-                  <TableContainer component={Paper}>
-                    <Table aria-label="いちごの株一覧">
-                    <TableHead>
-                      <TableRow>
-                        {columns.map((column) => (
-                          <TableCell key={column.id}>
-                            {column.sortable ? (
-                              <TableSortLabel
-                                active={sortConfig.key === column.id}
-                                direction={sortConfig.key === column.id ? sortConfig.direction : 'asc'}
-                                onClick={() => handleSort(column.id)}
-                              >
-                                {column.label}
-                              </TableSortLabel>
-                            ) : (
-                              column.label
-                            )}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    </TableHead>
-                    
-                      <TableBody>
-                        {filteredPlants.map((plant) => (
-                          <TableRow 
-                            key={plant.plant_id} 
-                            hover 
-                            onClick={() => handlePlantClick(plant)} 
-                            style={{ cursor: 'pointer' }}
-                            className="plant-row"
-                          >
-                            <TableCell>{plant.level}</TableCell>
-                            <TableCell>{plant.position}</TableCell>
-                            <TableCell>{new Date(plant.entry_date).toLocaleDateString()}</TableCell>
-                            <TableCell>{plant.state_type || '未設定'}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </>
-              )}
-            </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-        
-      </div>
+            </div>  
+          </>
+        ) : (
+          <>
+            <Typography variant="h5" gutterBottom>
+              {selectedShelf} の株一覧
+            </Typography>
+            <PlantTable
+              columns={columns}
+              plants={filteredPlants}
+              sortConfig={sortConfig}
+              onSort={handleSort}
+              onPlantClick={handlePlantClick}
+            />
+          </>
+        )}
+      </PlantListOverlay>
+      
+      {/* 新規株登録ダイアログ */}
+      <PlantRegistrationDialog
+        isOpen={isDialogOpen}
+        onClose={handleCloseDialog}
+        onRegister={handleRegisterPlant}
+      />
+    </div>
   );
 };
 
