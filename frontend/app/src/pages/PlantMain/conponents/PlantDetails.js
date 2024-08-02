@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import './styles.css'
-import apiAxios from '../api/axios';
-import { ENDPOINTS } from '../api/endpoints';
+import '../styles/PlantDetails.css';
+import apiAxios from '../../../api/axios';
+import { ENDPOINTS } from '../../../api/endpoints';
 
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";

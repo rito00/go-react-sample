@@ -9,8 +9,8 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
-import apiAxios from '../api/axios';
-import { ENDPOINTS } from '../api/endpoints';
+import apiAxios from '../../../api/axios';
+import { ENDPOINTS } from '../../../api/endpoints';
 
 const PlantRegistrationDialog = ({ isOpen, onClose, onRegister }) => {
   const [shelves, setShelves] = useState([]);

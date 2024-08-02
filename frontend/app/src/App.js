@@ -1,5 +1,5 @@
 import React from 'react';
-import PlantMain from './components/PlantMain';
+import PlantMain from './pages/PlantMain/PlantMain';
 
 function App() {
   return (

@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import apiAxios from '../api/axios';
-import Header from './containers/Header';
-import ShelfGrid from './containers/ShelfGrid';
-import PlantListOverlay from './containers/PlantListOverlay';
-import PlantTable from './containers/PlantTable';
-import PlantDetails from './PlantDetails';
-import PlantRegistrationDialog from './PlantRegistrationDialog';
+import apiAxios from '../../api/axios';
+import Header from './conponents/Header';
+import ShelfGrid from './conponents/ShelfGrid';
+import PlantListOverlay from './conponents/PlantListOverlay';
+import PlantTable from './conponents/PlantTable';
+import PlantDetails from './conponents/PlantDetails';
+import PlantRegistrationDialog from './conponents/PlantRegistrationDialog';
 
 import { 
   Table, 
@@ -27,7 +27,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { ENDPOINTS } from '../api/endpoints';
+import { ENDPOINTS } from '../../api/endpoints';
 
 const PlantMain = () => {
   const [loading, setLoading] = useState(true);
@@ -40,10 +40,11 @@ const PlantMain = () => {
   
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   
-  const [plantListOpen, setPlantListOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const sidebarRef = useRef(null);
+  const [showPlantList, setPlantListOpen] = useState(false);
+  const [showPlantDetail, setSidebarOpen] = useState(false);
+  const [showPlantRegisrationDialog, setIsDialogOpen] = useState(false);
+  const [showShelfMakingDialog, setShelfMakingDialog] = useState(false);
+  const plantDetailRef = useRef(null);
   
   useEffect(() => {
     fetchPlants();
@@ -58,7 +59,7 @@ const PlantMain = () => {
   }, []);
 
   const handleClickOutside = (event) => {
-    if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+    if (plantDetailRef.current && !plantDetailRef.current.contains(event.target)) {
       const clickedElement = event.target.closest('tr');
       if (!clickedElement || !clickedElement.classList.contains('plant-row')) {
         setSidebarOpen(false);
@@ -214,16 +215,16 @@ const PlantMain = () => {
       <ShelfGrid shelves={shelves} selectedShelf={selectedShelf} onShelfClick={handleShelfClick} />
       
       {/* 株一覧オーバーレイ */}
-      <PlantListOverlay isOpen={plantListOpen} onClose={handleClosePlantList}>
-        {sidebarOpen ? (
+      <PlantListOverlay isOpen={showPlantList} onClose={handleClosePlantList}>
+        {showPlantDetail ? (
           <>
             <Button onClick={handleBackToList} startIcon={<ArrowBackIcon />}>
               一覧に戻る
             </Button>
-            <div ref={sidebarRef}>
+            <div ref={plantDetailRef}>
               <PlantDetails 
                 plant={selectedPlant} 
-                isOpen={sidebarOpen} 
+                isOpen={showPlantDetail} 
                 onClose={() => setSidebarOpen(false)} 
               />
             </div>  
@@ -246,10 +247,12 @@ const PlantMain = () => {
       
       {/* 新規株登録ダイアログ */}
       <PlantRegistrationDialog
-        isOpen={isDialogOpen}
+        isOpen={showPlantRegisrationDialog}
         onClose={handleCloseDialog}
         onRegister={handleRegisterPlant}
       />
+      
+      {/* 新規棚作成ダイアログ */}
     </div>
   );
 };
