@@ -207,7 +207,12 @@ const PlantMain = () => {
   if (error) return <div>{error}</div>;
   
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100%'}}>
+    <div style={{ 
+      display: 'flex',
+      flexDirection: 'column',
+      width: '100%',
+      height: '100vh',
+    }}>
 
       <Header onOpenDialog={handleOpenDialog} />
 

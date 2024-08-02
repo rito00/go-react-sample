@@ -14,7 +14,15 @@ const App = () => {
   return (
     <Box sx={{ display: 'flex' }}>
     <Sidebar onViewChange={handleViewChange} />
-    <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+    <Box 
+        component="main" 
+        sx={{ 
+          flexGrow: 1, 
+          p: 3, 
+          width: 'calc(100% - 50px)', // サイドバーの幅を引いた残りの幅
+          position: 'relative' // オーバーレイの基準位置
+        }}
+      >
     {currentView === 'home' && <PlantMain />}
     {currentView === 'settings' && <Settings />}
     </Box>

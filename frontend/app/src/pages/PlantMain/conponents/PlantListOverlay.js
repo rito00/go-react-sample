@@ -12,7 +12,7 @@ const PlantListOverlay = ({ isOpen, onClose, children }) => {
             animate={{ opacity: 0.5 }}
             exit={{ opacity: 0 }}
             style={{
-              position: 'fixed',
+              position: 'absolute',
               top: 0,
               left: 0,
               right: 0,
