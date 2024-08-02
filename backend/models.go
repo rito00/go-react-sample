@@ -31,21 +31,17 @@ type PlantState struct {
   Description   string          `gorm:"column:description" json:"description"`
 }
 
-type Location struct {
-  LocationID uint   `gorm:"primaryKey" json:"location_id"`
-  Shelf      string `json:"shelf"`
-  Position   string `json:"position"`
-}
-
-type NewPlant struct {
-	Shelf    string `json:"shelf"`
-	Position string `json:"position"`
-	State    string `json:"state"`
+type RegisterPlantRequest struct {
+	Shelf           int     `json:"shelf"`
+	Level           int     `json:"level"`
+	Position        int     `json:"position"`
+	State           string  `json:"state"`
+	HarvestedAmount *float64 `json:"harvestedAmount,omitempty"`
 }
 
 type RegisterPlant struct {
 	PlantID    uint      `gorm:"primaryKey;column:plant_id" json:"plant_id"`
-	LocationID uint      `gorm:"column:location_id" json:"location_id"`
+	PositionID int      `gorm:"column:position_id" json:"position_id"`
 	EntryDate  time.Time `gorm:"column:entry_date" json:"entry_date"`
 }
 

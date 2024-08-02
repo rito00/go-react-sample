@@ -165,7 +165,7 @@ func getStateTypes(db *gorm.DB) http.HandlerFunc {
 
 func registerPlant(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-			var newPlant NewPlant
+			var newPlant RegisterPlantRequest
 			if err := json.NewDecoder(r.Body).Decode(&newPlant); err != nil {
 					http.Error(w, "Invalid request body", http.StatusBadRequest)
 					return
@@ -173,23 +173,35 @@ func registerPlant(db *gorm.DB) http.HandlerFunc {
 
 			// トランザクションを開始
 			tx := db.Begin()
+			defer func() {
+					if r := recover(); r != nil {
+							tx.Rollback()
+					}
+			}()
 
-			// 1. locationを取得
-			var location Location
-			if err := tx.Where("shelf = ? AND position = ?", newPlant.Shelf, newPlant.Position).First(&location).Error; err != nil {
+			// 1. Positionを取得
+			log.Printf("Searching for position: Shelf ID: %d, Level Number: %d, Position Number: %d", newPlant.Shelf, newPlant.Level, newPlant.Position)
+
+			var position Position
+			if err := tx.Table("positions").
+					Select("positions.id").
+					Joins("JOIN levels ON positions.level_id = levels.id").
+					Joins("JOIN shelves ON levels.shelf_id = shelves.id").
+					Where("shelves.id = ? AND levels.id = ? AND positions.id = ?", newPlant.Shelf, newPlant.Level, newPlant.Position).
+					First(&position).Error; err != nil {
 					tx.Rollback()
-					http.Error(w, "Location not found", http.StatusNotFound)
-					return
+					http.Error(w, "Position not found", http.StatusNotFound)
+				return
 			}
 
 			// 2. plantsテーブルに新しいレコードを作成
 			plant := RegisterPlant{
-					LocationID: location.LocationID,
+					PositionID: position.ID,
 					EntryDate:  time.Now(),
 			}
 			if err := tx.Table("plants").Create(&plant).Error; err != nil {
 					tx.Rollback()
-					http.Error(w, "Failed to create plant", http.StatusInternalServerError)
+					http.Error(w, fmt.Sprintf("Failed to create plant record: %v", err), http.StatusInternalServerError)
 					return
 			}
 
@@ -199,11 +211,14 @@ func registerPlant(db *gorm.DB) http.HandlerFunc {
 					Date:      time.Now(),
 					StateType: newPlant.State,
 			}
-			if err := tx.Table("plant_states").Create(&plantState).Error; err != nil {
-					tx.Rollback()
-					http.Error(w, "Failed to create plant state", http.StatusInternalServerError)
-					return
-			}
+			if newPlant.State == "harvested" && newPlant.HarvestedAmount != nil {
+				plantState.HarvestWeight = *newPlant.HarvestedAmount
+		}
+		if err := tx.Create(&plantState).Error; err != nil {
+				tx.Rollback()
+				http.Error(w, "Failed to create plant state record", http.StatusInternalServerError)
+				return
+		}
 
 			// トランザクションをコミット
 			if err := tx.Commit().Error; err != nil {
