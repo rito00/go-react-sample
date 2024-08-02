@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
+import apiAxios from '../api/axios';
 import PlantDetails from './PlantDetails';
 import PlantRegistrationDialog from './PlantRegistrationDialog';
 
@@ -22,6 +22,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { ENDPOINTS } from '../api/endpoints';
 
 const PlantMain = () => {
   const [loading, setLoading] = useState(true);
@@ -60,7 +61,7 @@ const PlantMain = () => {
 
   const fetchPlants = async () => {
     try {
-      const response = await axios.get('http://localhost:8080/api/plants');
+      const response = await apiAxios.get(ENDPOINTS.PLANTS);
       setPlants(response.data);
       setLoading(false);
     } catch (err) {
@@ -99,7 +100,7 @@ const PlantMain = () => {
 
   const handleRegisterPlant = async (newPlant) => {
     try {
-      const response = await axios.post('http://localhost:8080/api/plants', newPlant);
+      const response = await apiAxios.post(ENDPOINTS.PLANTS, newPlant);
       if (response.status === 201) {
         await fetchPlants();
       }
